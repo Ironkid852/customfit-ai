@@ -1,7 +1,8 @@
+/* eslint-disable react/display-name */
 // components/PlanDisplay.jsx
 import React from "react";
 
-const PlanDisplay = React.forwardRef((props, ref) => {
+const MarkdownPage = React.forwardRef((props, ref) => {
   return (
     <div ref={ref} className="p-4 bg-white rounded shadow">
       <h2 className="text-xl font-bold mb-2">Your Fitness & Nutrition Plan</h2>
@@ -14,4 +15,6 @@ const PlanDisplay = React.forwardRef((props, ref) => {
   );
 });
 
-export default PlanDisplay;
+MarkdownPage.displayName = "MarkdownPage";
+
+export default MarkdownPage;

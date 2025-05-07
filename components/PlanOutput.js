@@ -1,3 +1,4 @@
+/* eslint-disable react/display-name */
 import React from "react";
 
 const PlanOutput = React.forwardRef(({ formData }, ref) => {
@@ -21,5 +22,7 @@ const PlanOutput = React.forwardRef(({ formData }, ref) => {
     </div>
   );
 });
+
+PlanOutput.displayName = "PlanOutput";
 
 export default PlanOutput;
