@@ -1,4 +1,5 @@
 // pages/_app.js
+// Trigger redeploy: fixed analytics path
 import React from "react";
 import { Analytics } from "@vercel/analytics";
 import "@/styles/globals.css";
