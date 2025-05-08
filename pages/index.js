@@ -1,6 +1,5 @@
-import jsPDF from 'jspdf'; // Add this import at the top
-import React, { useState } from 'react';
-import PlanDisplay from '../components/PlanDisplay';
+import { useState } from 'react';
+import { jsPDF } from 'jspdf';
 
 export default function Home() {
   const [formData, setFormData] = useState({
@@ -14,139 +13,179 @@ export default function Home() {
     goal: '',
     experience: '',
     diet: '',
-    equipment: '',
+    equipment: ''
   });
-
-  const [planText, setPlanText] = useState('');
+  const [plan, setPlan] = useState('');
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]: value,
-    }));
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const generatePlan = () => {
+    const {
+      goal,
+      age,
+      weight,
+      height,
+      gender,
+      bodyFat,
+      vo2max,
+      lactateThreshold,
+      experience,
+      diet,
+      equipment
+    } = formData;
 
-    const response = await fetch('/api/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ formData }),
-    });
+    const calorieEstimate = weight * (
+      goal === 'Fat Loss' ? 25 :
+      goal === 'Muscle Gain' ? 35 :
+      goal === 'Endurance' || goal === 'Half-Marathon' ? 33 :
+      goal === 'Longevity' || goal === 'Healthspan' ? 28 :
+      30
+    );
 
-    const data = await response.json();
-    setPlanText(data.plan); // Assumes the API returns { plan: "<html>...</html>" }
+    const macroSplit = {
+      carbs: '40%',
+      protein: '30%',
+      fat: '30%'
+    };
+
+    const mealIdeas = `### Meal Ideas
+
+**Breakfast**
+- Greek yogurt with berries and oats
+- Scrambled eggs with spinach and whole-grain toast
+
+**Lunch**
+- Grilled chicken salad with olive oil dressing
+- Quinoa bowl with roasted veggies and tofu (vegan option)
+
+**Dinner**
+- Baked salmon with sweet potato and broccoli
+- Lentil curry with brown rice (vegan option)
+`;
+
+    const basePlan = `# Tailored Fitness Plan
+
+## Goal: ${goal}
+**Age**: ${age}  
+**Weight**: ${weight} kg  
+**Height**: ${height} cm  
+**Gender**: ${gender}  
+**Body Fat %**: ${bodyFat}  
+**VO2 Max**: ${vo2max}  
+**Lactate Threshold**: ${lactateThreshold}  
+**Experience**: ${experience}  
+**Diet**: ${diet}  
+**Equipment**: ${equipment}
+
+## Training Recommendation
+- Weekly split based on goal and experience
+- 3–5 workouts per week
+- Progressive overload with compound lifts
+
+## Nutrition Guidance
+**Estimated Daily Calories**: ${calorieEstimate.toFixed(0)} kcal  
+**Macro Split**: Carbs ${macroSplit.carbs}, Protein ${macroSplit.protein}, Fat ${macroSplit.fat}
+
+${mealIdeas}
+
+---
+Want more customization, sample meals, and grocery lists? Unlock premium features!
+`;
+
+    setPlan(basePlan);
   };
 
   const downloadPDF = () => {
-    const doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'a4',
-    });
-
-    const lines = doc.splitTextToSize(planText, 180); // Wrap text to fit A4 width
+    const doc = new jsPDF();
+    doc.setFontSize(12);
+    const lines = plan.split('\n');
     let y = 10;
 
-    lines.forEach((line, index) => {
-      if (y > 280) { // Start new page if space exceeded
-        doc.addPage();
-        y = 10;
-      }
-      doc.text(line, 10, y);
-      y += 7;
+    lines.forEach((line) => {
+      const isHeader = /^#{1,6}\s/.test(line);
+      const isBold = /^\*\*.+\*\*[:：]?\s*/.test(line);
+
+      const splitLines = (isHeader || isBold)
+        ? [line]
+        : doc.splitTextToSize(line, 180);
+
+      splitLines.forEach((l) => {
+        if (y >= 280) {
+          doc.addPage();
+          y = 10;
+        }
+        doc.text(l, 10, y);
+        y += 8;
+      });
     });
 
-    doc.save('fitness_plan.pdf');
+    doc.save('fitness-plan.pdf');
+  };
+
+  const textFields = ["age", "weight", "height", "bodyFat", "vo2max", "lactateThreshold"];
+  const dropdowns = {
+    gender: ['Male', 'Female', 'Other'],
+    goal: ['Fat Loss', 'Muscle Gain', 'Endurance', 'Longevity', 'Healthspan', 'Half-Marathon'],
+    experience: ['Beginner', 'Intermediate', 'Advanced'],
+    diet: ['Omnivore', 'Vegetarian', 'Vegan', 'Keto', 'Paleo', 'Mediterranean'],
+    equipment: ['None', 'Basic (dumbbells/mats)', 'Full gym access', 'Resistance Bands', 'Barbell & Plates', 'Body Weight']
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center px-4">
+    <div className="p-6 max-w-xl mx-auto text-white">
       <h1 className="text-4xl font-bold mb-2 text-center">Build Your Free Fitness Plan</h1>
-      <p className="text-center text-lg mb-8 max-w-xl">
-        Answer a few quick questions and get a personalized fitness & nutrition plan just for you.
-      </p>
-      <form onSubmit={handleSubmit} className="bg-zinc-900 p-6 rounded-xl shadow-xl w-full max-w-md space-y-4">
-        {['age', 'weight', 'height', 'bodyFat', 'vo2max', 'lactateThreshold'].map((field) => (
+      <p className="text-center mb-6">Answer a few quick questions and get a personalized fitness & nutrition plan just for you.</p>
+
+      <div className="bg-zinc-800 p-6 rounded-xl space-y-4">
+        {textFields.map((field) => (
           <input
             key={field}
-            type="number"
+            type="text"
             name={field}
-            placeholder={
-              field === 'age' ? 'Age' :
-              field === 'weight' ? 'Weight (kg)' :
-              field === 'height' ? 'Height (cm)' :
-              field === 'bodyFat' ? 'Body Fat %' :
-              field === 'vo2max' ? 'VO₂ max' :
-              'Lactate Threshold (km/h)'
-            }
+            placeholder={field.charAt(0).toUpperCase() + field.slice(1).replace(/([A-Z])/g, ' $1') + (['bodyFat', 'vo2max', 'lactateThreshold'].includes(field) ? ' (optional)' : '')}
             value={formData[field]}
             onChange={handleChange}
-            className="w-full p-3 rounded-md bg-zinc-800 text-white placeholder-gray-400"
-            required
+            className="w-full text-white placeholder-gray-300 bg-zinc-700 p-2 rounded h-10"
           />
         ))}
 
-        <select name="gender" value={formData.gender} onChange={handleChange} required className="w-full p-3 rounded-md bg-zinc-800 text-white">
-          <option value="" disabled>Select Gender</option>
-          <option value="Male">Male</option>
-          <option value="Female">Female</option>
-          <option value="Other">Other</option>
-        </select>
-
-        <select name="goal" value={formData.goal} onChange={handleChange} required className="w-full p-3 rounded-md bg-zinc-800 text-white">
-          <option value="" disabled>Select Goal</option>
-          <option value="Longevity">Longevity</option>
-          <option value="Fat Loss">Fat Loss</option>
-          <option value="Muscle Gain">Muscle Gain</option>
-          <option value="Performance">Performance</option>
-          <option value="Half-Marathon">Half-Marathon</option>
-          <option value="Healthspan">Healthspan</option>
-        </select>
-
-        <select name="experience" value={formData.experience} onChange={handleChange} required className="w-full p-3 rounded-md bg-zinc-800 text-white">
-          <option value="" disabled>Select Experience Level</option>
-          <option value="Beginner">Beginner</option>
-          <option value="Intermediate">Intermediate</option>
-          <option value="Advanced">Advanced</option>
-        </select>
-
-        <select name="diet" value={formData.diet} onChange={handleChange} required className="w-full p-3 rounded-md bg-zinc-800 text-white">
-          <option value="" disabled>Select Diet</option>
-          <option value="Omnivore">Omnivore</option>
-          <option value="Vegetarian">Vegetarian</option>
-          <option value="Vegan">Vegan</option>
-          <option value="Pescatarian">Pescatarian</option>
-          <option value="Paleo">Paleo</option>
-        </select>
-
-        <select name="equipment" value={formData.equipment} onChange={handleChange} required className="w-full p-3 rounded-md bg-zinc-800 text-white">
-          <option value="" disabled>Select Equipment Access</option>
-          <option value="Full gym access">Full gym access</option>
-          <option value="Home gym">Home gym</option>
-          <option value="No equipment">No equipment</option>
-          <option value="Body weight">Body weight</option>
-        </select>
+        {Object.entries(dropdowns).map(([field, options]) => (
+          <select
+            key={field}
+            name={field}
+            value={formData[field]}
+            onChange={handleChange}
+            className="w-full text-white bg-zinc-700 p-2 rounded h-10"
+          >
+            <option value="" disabled>{`Select ${field.charAt(0).toUpperCase() + field.slice(1)}`}</option>
+            {options.map(opt => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
+        ))}
 
         <button
-          type="submit"
-          className="w-full p-3 mt-4 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+          onClick={generatePlan}
+          className="mt-4 w-full bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded shadow-lg transition"
         >
-          Generate Plan
+          Generate My Plan
         </button>
-      </form>
-      {planText && (
-        <div className="mt-10 w-full max-w-4xl">
-          <PlanDisplay formData={formData} planText={planText} />
+      </div>
+
+      {plan && (
+        <>
+          <div className="bg-zinc-800 p-6 mt-6 rounded whitespace-pre-wrap text-sm leading-relaxed">
+            {plan}
+          </div>
           <button
             onClick={downloadPDF}
-            className="mt-4 p-3 rounded-md bg-green-600 hover:bg-green-700 text-white font-semibold"
+            className="mt-4 w-full bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded shadow-lg transition"
           >
-            Download Plan as PDF
+            Download PDF
           </button>
-        </div>
+        </>
       )}
     </div>
   );

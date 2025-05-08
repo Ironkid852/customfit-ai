@@ -3,7 +3,7 @@ import React from "react";
 
 const PlanOutput = React.forwardRef(({ formData }, ref) => {
   return (
-    <div ref={ref} className="p-6 bg-white rounded shadow text-black">
+    <div id="plan-output" ref={ref} className="p-6 bg-white rounded shadow text-black">
       <h2 className="text-2xl font-bold mb-4">Your Fitness & Nutrition Plan</h2>
       {formData ? (
         <>
@@ -24,5 +24,4 @@ const PlanOutput = React.forwardRef(({ formData }, ref) => {
 });
 
 PlanOutput.displayName = "PlanOutput";
-
 export default PlanOutput;
